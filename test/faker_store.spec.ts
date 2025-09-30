@@ -6,7 +6,6 @@ describe('Postman Echo API - Multiple Requests', () => {
   const p = pactum;
   const baseUrl = 'https://postman-echo.com';
 
-  // POST #1 - send user data and expect it echoed back
   it('POST /post - echo user data', async () => {
     const payload = {
       user: faker.internet.userName(),
@@ -23,7 +22,6 @@ describe('Postman Echo API - Multiple Requests', () => {
       });
   });
 
-  // POST #2 - send message and verify response
   it('POST /post - echo message data', async () => {
     const payload = {
       message: faker.lorem.sentence(),
@@ -40,7 +38,6 @@ describe('Postman Echo API - Multiple Requests', () => {
       });
   });
 
-  // GET #1 - simple get with query params and expect echoed args
   it('GET /get - with query params', async () => {
     const query = {
       search: faker.lorem.word(),
@@ -57,7 +54,6 @@ describe('Postman Echo API - Multiple Requests', () => {
       });
   });
 
-  // GET #2 - get with different query params
   it('GET /get - with different query params', async () => {
     const query = {
       category: 'books',
@@ -74,7 +70,6 @@ describe('Postman Echo API - Multiple Requests', () => {
       });
   });
 
-  // PUT - update with json body and expect echoed data
   it('PUT /put - update resource', async () => {
     const updateData = {
       title: faker.lorem.words(3),
@@ -88,6 +83,77 @@ describe('Postman Echo API - Multiple Requests', () => {
       .expectStatus(StatusCodes.OK)
       .expectJsonLike({
         data: updateData
+      });
+  });
+
+  it('GET /headers - validate custom headers', async () => {
+    const customHeaders = {
+      'x-api-key': faker.string.uuid(),
+      'x-trace-id': faker.string.uuid()
+    };
+
+    await p
+      .spec()
+      .get(`${baseUrl}/headers`)
+      .withHeaders(customHeaders)
+      .expectStatus(StatusCodes.OK)
+      .expectJsonLike({
+        headers: {
+          'x-api-key': customHeaders['x-api-key'],
+          'x-trace-id': customHeaders['x-trace-id']
+        }
+      });
+  });
+  
+  it('DELETE /delete - delete resource and expect echoed data', async () => {
+    const deleteData = {
+      resourceId: faker.number.int()
+    };
+
+    await p
+      .spec()
+      .delete(`${baseUrl}/delete`)
+      .withJson(deleteData)
+      .expectStatus(StatusCodes.OK)
+      .expectJsonLike({
+        data: deleteData
+      });
+  });
+
+  it('POST /post - send form data', async () => {
+    const formData = {
+      username: faker.internet.userName(),
+      password: faker.internet.password()
+    };
+
+    const formBody = new URLSearchParams(formData).toString();
+  
+    await p
+      .spec()
+      .post(`${baseUrl}/post`)
+      .withHeaders({ 'Content-Type': 'application/x-www-form-urlencoded' })
+      .withBody(formBody)
+      .expectStatus(StatusCodes.OK)
+      .expectJsonLike({
+        form: formData
+      });
+  });
+
+  it('GET /invalid-endpoint - expect 404 Not Found', async () => {
+    await p
+      .spec()
+      .get(`${baseUrl}/invalid-endpoint`)
+      .expectStatus(StatusCodes.NOT_FOUND);
+  });
+
+  it('POST /post - send empty JSON body', async () => {
+    await p
+      .spec()
+      .post(`${baseUrl}/post`)
+      .withJson({})
+      .expectStatus(StatusCodes.OK)
+      .expectJsonLike({
+        data: {}
       });
   });
 });
